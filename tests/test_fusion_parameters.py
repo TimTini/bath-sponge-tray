@@ -6,6 +6,7 @@ import math
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
+from itertools import product
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
@@ -15,6 +16,35 @@ spec.loader.exec_module(tray)
 
 
 class ParametersTest(unittest.TestCase):
+    def test_rear_coordinates_and_inward_direction_follow_sketch_frame(self):
+        def point(x, y, z):
+            return SimpleNamespace(x=x, y=y, z=z)
+
+        for sx, sz, swap in product((1, -1), (1, -1), (False, True)):
+            normal_y = sx * sz * (1 if swap else -1)
+
+            class Sketch:
+                def modelToSketchSpace(self, p):
+                    a, b = sx * p.x, sz * p.z
+                    depth = normal_y * (p.y - 7)
+                    return point(b, a, depth) if swap else point(a, b, depth)
+
+                def sketchToModelSpace(self, p):
+                    a, b = (p.y, p.x) if swap else (p.x, p.y)
+                    return point(a / sx, 7 + normal_y * p.z, b / sz)
+
+            with self.subTest(sx=sx, sz=sz, swap=swap):
+                sketch = Sketch()
+                frame = tray.rear_frame(sketch, 7, point)
+                self.assertEqual(frame['x_axis'], 1 if swap else 0)
+                self.assertEqual(frame['z_axis'], 0 if swap else 1)
+                self.assertEqual(frame['positive_inward'], normal_y < 0)
+                local = tray.rear_point(sketch, 5, 3.85, 7, point)
+                world = sketch.sketchToModelSpace(local)
+                self.assertEqual((world.x, world.y, world.z), (5, 7, 3.85))
+                local.z = 0.3 if frame['positive_inward'] else -0.3
+                self.assertAlmostEqual(sketch.sketchToModelSpace(local).y, 6.7)
+
     def test_build_does_not_rename_root_component(self):
         class ReachedParameters(Exception):
             pass

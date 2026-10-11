@@ -82,6 +82,34 @@ def layout(p, hook_count):
             'overall_height': p['height'] + (p['ear_rise'] if hook_count == 1 else 0)}
 
 
+def rear_point(sketch, x, z, width, point):
+    """Map a point on the rear wall from model X/Z to local sketch coordinates."""
+    return sketch.modelToSketchSpace(point(x, width, z))
+
+
+def rear_frame(sketch, width, point):
+    """Read local axis mapping and extrusion direction instead of assuming XZ signs."""
+    origin = rear_point(sketch, 0, 0, width, point)
+    if max(abs(origin.x), abs(origin.y), abs(origin.z)) > 1e-6:
+        raise RuntimeError('Rear sketch origin mismatch: model (0, width, 0) maps to local ({}, {}, {}).'.format(
+            origin.x, origin.y, origin.z))
+    axes = []
+    for x, z in ((1, 0), (0, 1)):
+        p = rear_point(sketch, x, z, width, point)
+        delta = [p.x - origin.x, p.y - origin.y, p.z - origin.z]
+        axis = max(range(2), key=lambda i: abs(delta[i]))
+        if abs(abs(delta[axis]) - 1) > 1e-6 or any(
+                abs(delta[i]) > 1e-6 for i in range(3) if i != axis):
+            raise RuntimeError('Rear sketch axis is not aligned with model X/Z: {}.'.format(delta))
+        axes.append(axis)
+    a = sketch.sketchToModelSpace(point(0, 0, 0))
+    b = sketch.sketchToModelSpace(point(0, 0, 1))
+    if axes[0] == axes[1] or abs(abs(b.y - a.y) - 1) > 1e-6:
+        raise RuntimeError('Rear sketch normal mismatch: axes={}, normal=({}, {}, {}).'.format(
+            axes, b.x - a.x, b.y - a.y, b.z - a.z))
+    return {'x_axis': axes[0], 'z_axis': axes[1], 'positive_inward': b.y < a.y}
+
+
 def build(design, hook_count):
     import adsk.core as core
     import adsk.fusion as fusion
@@ -113,37 +141,53 @@ def build(design, hook_count):
         dim = sketch.sketchDimensions.addDistanceDimension(a, b, orientation, text)
         dim.parameter.expression = expression
 
-    def position(sketch, vertex, x, y):
-        dimension(sketch, sketch.originPoint, vertex, horizontal, x)
-        dimension(sketch, sketch.originPoint, vertex, vertical, y)
+    def position(sketch, vertex, x, y, axes=(0, 1)):
+        orientations = (horizontal, vertical)
+        dimension(sketch, sketch.originPoint, vertex, orientations[axes[0]], x)
+        dimension(sketch, sketch.originPoint, vertex, orientations[axes[1]], y)
 
-    def rectangle(plane, x, y, w, h, name, at_origin=False):
+    def rectangle(plane, x, y, w, h, name, at_origin=False, on_rear=False):
         sketch = comp.sketches.add(plane)
         sketch.name = name
         lines = sketch.sketchCurves.sketchLines
         x0, y0, dx, dy = cm(x), cm(y), cm(w), cm(h)
-        start = sketch.originPoint if at_origin else point(x0, y0, 0)
-        bottom = lines.addByTwoPoints(start, point(x0 + dx, y0, 0))
-        right = lines.addByTwoPoints(bottom.endSketchPoint, point(x0 + dx, y0 + dy, 0))
-        top = lines.addByTwoPoints(right.endSketchPoint, point(x0, y0 + dy, 0))
+        axes = (0, 1)
+        if on_rear:
+            frame = rear_frame(sketch, cm('width'), point)
+            axes = (frame['x_axis'], frame['z_axis'])
+
+        def mapped(a, b):
+            return rear_point(sketch, a, b, cm('width'), point) if on_rear else point(a, b, 0)
+
+        start = sketch.originPoint if at_origin else mapped(x0, y0)
+        bottom = lines.addByTwoPoints(start, mapped(x0 + dx, y0))
+        right = lines.addByTwoPoints(bottom.endSketchPoint, mapped(x0 + dx, y0 + dy))
+        top = lines.addByTwoPoints(right.endSketchPoint, mapped(x0, y0 + dy))
         left = lines.addByTwoPoints(top.endSketchPoint, bottom.startSketchPoint)
+        constraints = (sketch.geometricConstraints.addHorizontal, sketch.geometricConstraints.addVertical)
         for line in (bottom, top):
-            sketch.geometricConstraints.addHorizontal(line)
+            constraints[axes[0]](line)
         for line in (right, left):
-            sketch.geometricConstraints.addVertical(line)
+            constraints[axes[1]](line)
         if not at_origin:
-            position(sketch, bottom.startSketchPoint, x, y)
-        dimension(sketch, bottom.startSketchPoint, bottom.endSketchPoint, horizontal, w)
-        dimension(sketch, right.startSketchPoint, right.endSketchPoint, vertical, h)
+            position(sketch, bottom.startSketchPoint, x, y, axes)
+        orientations = (horizontal, vertical)
+        dimension(sketch, bottom.startSketchPoint, bottom.endSketchPoint, orientations[axes[0]], w)
+        dimension(sketch, right.startSketchPoint, right.endSketchPoint, orientations[axes[1]], h)
         return sketch
 
-    def circle(plane, x, y, diameter, name):
+    def circle(plane, x, y, diameter, name, on_rear=False):
         sketch = comp.sketches.add(plane)
         sketch.name = name
-        curve = sketch.sketchCurves.sketchCircles.addByCenterRadius(
-            point(cm(x), cm(y), 0), cm(diameter) / 2)
-        position(sketch, curve.centerSketchPoint, x, y)
-        dim = sketch.sketchDimensions.addDiameterDimension(curve, point(cm(x) + 1, cm(y) + 1, 0))
+        centre = point(cm(x), cm(y), 0)
+        axes = (0, 1)
+        if on_rear:
+            frame = rear_frame(sketch, cm('width'), point)
+            axes = (frame['x_axis'], frame['z_axis'])
+            centre = rear_point(sketch, cm(x), cm(y), cm('width'), point)
+        curve = sketch.sketchCurves.sketchCircles.addByCenterRadius(centre, cm(diameter) / 2)
+        position(sketch, curve.centerSketchPoint, x, y, axes)
+        dim = sketch.sketchDimensions.addDiameterDimension(curve, point(centre.x + 1, centre.y + 1, 0))
         dim.parameter.expression = diameter
         return sketch
 
@@ -155,12 +199,14 @@ def build(design, hook_count):
         result.isLightBulbOn = False
         return result
 
-    def extrude(sketch, distance, operation, name, target=None):
+    def extrude(sketch, distance, operation, name, target=None, on_rear=False):
         if not sketch.isFullyConstrained:
             raise RuntimeError('Sketch chưa được ràng buộc đầy đủ: ' + sketch.name)
         inp = comp.features.extrudeFeatures.createInput(sketch.profiles.item(0), operation)
-        inp.setOneSideExtent(fusion.DistanceExtentDefinition.create(value(distance)),
-                             fusion.ExtentDirections.PositiveExtentDirection)
+        direction = fusion.ExtentDirections.PositiveExtentDirection
+        if on_rear and not rear_frame(sketch, cm('width'), point)['positive_inward']:
+            direction = fusion.ExtentDirections.NegativeExtentDirection
+        inp.setOneSideExtent(fusion.DistanceExtentDefinition.create(value(distance)), direction)
         if target is not None:
             inp.participantBodies = [target]
         result = comp.features.extrudeFeatures.add(inp)
@@ -206,22 +252,14 @@ def build(design, hook_count):
     fillet(axis_edges(cavity, 2), 'corner_radius - wall', 'Inside corners', 4)
     combine(body, cavity, cut, 'Hollow tray')
 
-    # XZ plane normal is -Y in Fusion; use its actual normal for the offset sign.
+    # Offset to Y=width using the construction plane's actual normal.
     rear_sign = comp.xZConstructionPlane.geometry.normal.y
     rear = offset(comp.xZConstructionPlane, '-width' if rear_sign < 0 else 'width', 'Rear wall')
-    # Confirm sketch coordinates are X/Z and positive extrusion points into the wall.
-    probe = comp.sketches.add(rear)
-    origin = probe.sketchToModelSpace(point(0, 0, 0))
-    px = probe.sketchToModelSpace(point(1, 0, 0))
-    pz = probe.sketchToModelSpace(point(0, 1, 0))
-    if abs(px.x - origin.x - 1) > 1e-6 or abs(pz.z - origin.z - 1) > 1e-6 or rear_sign >= 0:
-        raise RuntimeError('Unexpected XZ plane orientation; cannot construct rear features safely.')
-    probe.deleteMe()
 
     if hook_count == 1:
         ear = rectangle(rear, '(length - ear_width) / 2', 'height - 5 mm',
-                        'ear_width', 'ear_rise + 5 mm', 'Ear outline')
-        ear_body = extrude(ear, 'wall', new_body, 'Ear blank').bodies.item(0)
+                        'ear_width', 'ear_rise + 5 mm', 'Ear outline', on_rear=True)
+        ear_body = extrude(ear, 'wall', new_body, 'Ear blank', on_rear=True).bodies.item(0)
         fillet(axis_edges(ear_body, 1), '5 mm', 'Ear corners R5', 4)
         combine(body, ear_body, fusion.FeatureOperations.JoinFeatureOperation, 'Join ear')
         shoulders = []
@@ -236,8 +274,8 @@ def build(design, hook_count):
         hook_specs = [('(length - hook_spacing) / 2', 'hook_height'),
                       ('(length + hook_spacing) / 2', 'hook_height')]
     for index, (x, z) in enumerate(hook_specs, 1):
-        sketch = circle(rear, x, z, 'hook_diameter', 'Hook {}'.format(index))
-        extrude(sketch, 'wall', cut, 'Hook cut {}'.format(index), body)
+        sketch = circle(rear, x, z, 'hook_diameter', 'Hook {}'.format(index), on_rear=True)
+        extrude(sketch, 'wall', cut, 'Hook cut {}'.format(index), body, on_rear=True)
 
     drain = circle(comp.xYConstructionPlane, 'drain_start_x', 'drain_start_y', 'drain_diameter', 'Drain seed')
     seed = extrude(drain, 'floor_thickness', cut, 'Drain cut', body)
