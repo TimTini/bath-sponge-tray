@@ -1,0 +1,9 @@
+/work/
+/backup/
+/backups/
+/.venv/
+/__pycache__/
+*.pyc
+.env
+.env.*
+/exports/photoreal/prompts.md

@@ -1,0 +1,25 @@
+{
+  "bounds_mm": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      100.0,
+      70.0,
+      47.0
+    ]
+  ],
+  "watertight": true,
+  "winding_consistent": true,
+  "components": 1,
+  "triangles": 10180,
+  "volume_mm3": 44803.00148503826,
+  "drain_count": 35,
+  "drain_diameter_mm": 6,
+  "hook_count": 1,
+  "hook_diameter_mm": 10,
+  "hook_spacing_mm": null,
+  "physical_print_verified": false
+}
