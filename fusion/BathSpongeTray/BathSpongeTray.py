@@ -88,7 +88,7 @@ def build(design, hook_count):
 
     layout(DEFAULTS, hook_count)
     comp = design.rootComponent
-    comp.name = 'Bath Sponge Tray - {} hook(s)'.format(hook_count)
+    # Fusion owns the root component name; run() names the new document instead.
     value = core.ValueInput.createByString
     point = core.Point3D.create
     for name, number in DEFAULTS.items():

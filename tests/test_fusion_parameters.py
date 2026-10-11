@@ -4,6 +4,8 @@ from pathlib import Path
 import re
 import math
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
@@ -13,6 +15,33 @@ spec.loader.exec_module(tray)
 
 
 class ParametersTest(unittest.TestCase):
+    def test_build_does_not_rename_root_component(self):
+        class ReachedParameters(Exception):
+            pass
+
+        class RootComponent:
+            @property
+            def name(self):
+                return 'Document name'
+
+            @name.setter
+            def name(self, value):
+                raise RuntimeError('3 : root component name cannot be changed')
+
+        def add_parameter(*args):
+            raise ReachedParameters
+
+        core = SimpleNamespace(ValueInput=SimpleNamespace(createByString=str),
+                               Point3D=SimpleNamespace(create=lambda *args: args))
+        fusion = SimpleNamespace(DimensionOrientations=SimpleNamespace(
+            HorizontalDimensionOrientation=0, VerticalDimensionOrientation=1))
+        adsk = SimpleNamespace(core=core, fusion=fusion)
+        design = SimpleNamespace(rootComponent=RootComponent(),
+                                 userParameters=SimpleNamespace(add=add_parameter))
+        with patch.dict('sys.modules', {'adsk': adsk, 'adsk.core': core, 'adsk.fusion': fusion}):
+            with self.assertRaises(ReachedParameters):
+                tray.build(design, 1)
+
     def test_scad_defaults_match(self):
         source = (ROOT / 'khay-bong-tam.scad').read_text(encoding='utf-8')
         values = dict(re.findall(r'^([a-z_]+) = (\d+(?:\.\d+)?);', source, re.M))
