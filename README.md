@@ -2,6 +2,8 @@
 
 Parametric bath sponge tray with drainage and one or two hanging holes. Editable OpenSCAD sources are available with English or Vietnamese parameter descriptions. Preview images are digital renders; no physical print, hook fit or load rating has been validated.
 
+Bản Python cho Autodesk Fusion ở [`fusion/BathSpongeTray`](fusion/BathSpongeTray). Script tạo mô hình native với User Parameters và công thức cập nhật trong **Change Parameters**. Xem [cách chạy, thông số và trạng thái kiểm chứng](fusion/README.md); chưa kiểm chứng dựng mô hình thực tế trong Fusion.
+
 Khay hở miệng, một khối, thân khay **100 × 70 × 30 mm**. Bản mặc định có tai treo cao thêm 17 mm, tổng chiều cao **47 mm**.
 
 - Thành và đáy dày 3 mm; lòng khay 94 × 64 mm, sâu 27 mm.
