@@ -46,3 +46,7 @@ Nếu OpenSCAD chưa có trong PATH, truyền đường dẫn executable bằng 
 ## Ảnh mô phỏng vật liệu
 
 Các ảnh trong `exports/photoreal/` là ảnh AI mô phỏng nhựa FDM, không phải ảnh chụp bản in. Dùng source SCAD và STL làm chuẩn hình học.
+
+## Bộ tài liệu agent tự học.
+
+[Cẩm nang dùng chung](https://github.com/TimTini/snaplock-storage-box/blob/main/docs/agent-learning.md) tổng hợp quy trình SCAD trước rồi Fusion Python sau. [Sổ lỗi và cách sửa](https://github.com/TimTini/snaplock-storage-box/blob/main/docs/error-cookbook.md) ghi các ca kỹ thuật cùng phạm vi kiểm chứng. [Mẫu giao việc](https://github.com/TimTini/snaplock-storage-box/blob/main/docs/scad-to-fusion-task.md) áp dụng quy trình cho model mới.
