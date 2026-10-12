@@ -4,6 +4,13 @@
 /.venv/
 /__pycache__/
 *.pyc
+.vscode/
+.cache/
+cache/
+*.log
 .env
 .env.*
+secrets/
+.secrets/
+*.secret
 /exports/photoreal/prompts.md
