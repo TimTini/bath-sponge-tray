@@ -2,6 +2,8 @@
 
 Parametric bath sponge tray with drainage and one or two hanging holes. Editable OpenSCAD sources are available with English or Vietnamese parameter descriptions. Preview images are digital renders; no physical print, hook fit or load rating has been validated.
 
+Bản chính của hướng dẫn chung nằm tại `H:/OpenSCAD/docs/guides`, dùng cho mọi dự án STL, OpenSCAD và Fusion. [Bản lưu công khai 1.0.2](https://github.com/TimTini/snaplock-storage-box/tree/e9311687b4653a4055597ba93b595d739734020c/docs/guides) giữ nội dung theo commit trước khi chuyển thư mục.
+
 Bản Python cho Autodesk Fusion ở [`fusion/BathSpongeTray`](fusion/BathSpongeTray). Script tạo mô hình native với User Parameters và công thức cập nhật trong **Change Parameters**. Xem [cách chạy, thông số và trạng thái kiểm chứng](fusion/README.md); chưa kiểm chứng dựng mô hình thực tế trong Fusion.
 
 Khay hở miệng, một khối, thân khay **100 × 70 × 30 mm**. Bản mặc định có tai treo cao thêm 17 mm, tổng chiều cao **47 mm**.
@@ -49,4 +51,4 @@ Các ảnh trong `exports/photoreal/` là ảnh AI mô phỏng nhựa FDM, khôn
 
 ## Bộ tài liệu agent tự học.
 
-[Bộ hướng dẫn chung STL, OpenSCAD và Fusion](https://github.com/TimTini/snaplock-storage-box/blob/main/docs/guides/README.md) có [điểm vào cho agent](https://github.com/TimTini/snaplock-storage-box/blob/main/docs/guides/START-HERE.md), quy trình theo đầu vào, thiết lập chuyển máy, template và registry nguồn. Các hồ sơ của project này là ví dụ có phạm vi riêng.
+[Bộ hướng dẫn chung STL, OpenSCAD và Fusion](https://github.com/TimTini/snaplock-storage-box/blob/e9311687b4653a4055597ba93b595d739734020c/docs/guides/README.md) có [điểm vào cho agent](https://github.com/TimTini/snaplock-storage-box/blob/e9311687b4653a4055597ba93b595d739734020c/docs/guides/START-HERE.md), quy trình theo đầu vào, thiết lập chuyển máy, template và registry nguồn. Các hồ sơ của project này là ví dụ có phạm vi riêng.
