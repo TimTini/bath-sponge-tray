@@ -4,7 +4,7 @@ Cấu trúc thư mục và vai trò dữ liệu: [docs/STRUCTURE.md](docs/STRUCT
 
 Parametric bath sponge tray with drainage and one or two hanging holes. Editable OpenSCAD sources are available with English or Vietnamese parameter descriptions. Preview images are digital renders; no physical print, hook fit or load rating has been validated.
 
-Bản chính của hướng dẫn chung nằm tại `H:/OpenSCAD/docs/guides`, dùng cho mọi dự án STL, OpenSCAD và Fusion. [Bản lưu công khai 1.0.2](https://github.com/TimTini/snaplock-storage-box/tree/e9311687b4653a4055597ba93b595d739734020c/docs/guides) giữ nội dung theo commit trước khi chuyển thư mục.
+Hướng dẫn chung dùng cho các dự án STL, OpenSCAD và Fusion: [bản lưu công khai 1.0.2](https://github.com/TimTini/snaplock-storage-box/tree/e9311687b4653a4055597ba93b595d739734020c/docs/guides). Bản lưu giữ nội dung tại commit được liên kết.
 
 Bản Python cho Autodesk Fusion ở [`fusion/BathSpongeTray`](fusion/BathSpongeTray). Script tạo mô hình native với User Parameters và công thức cập nhật trong **Change Parameters**. Xem [cách chạy, thông số và trạng thái kiểm chứng](fusion/README.md); chưa kiểm chứng dựng mô hình thực tế trong Fusion.
 
